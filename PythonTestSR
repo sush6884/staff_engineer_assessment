@@ -1,0 +1,70 @@
+import pandas as pd
+import glob
+from datetime 
+import datetime
+import sqlalchemy
+import mysql.connector
+
+DB_USERNAME = 'root'
+DB_PASSWORD = ''
+DB_HOST = '127.0.0.1'
+DB_NAME = "MedicineData"
+DB_PORT = '3306'
+
+def connect_db():
+   
+connection = mysql.connector.connect(user=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST)
+   
+cursor = connection.cursor()
+    
+sql = 'CREATE DATABASE ' + DB_NAME
+    try:
+        cursor.execute(sql)
+    except mysql.connector.errors.DatabaseError:
+        print("Database Already Exists")
+    return sqlalchemy.create_engine(
+        'mysql+mysqlconnector://' + DB_USERNAME + ':' + DB_PASSWORD + '@' + DB_HOST + ':' + DB_PORT + '/' + DB_NAME,
+        echo=False)
+
+def demographics(Demographics, file):
+    Demographics['Sex'] = Demographics['Sex'].map({0.0: 'M', 1.0: 'F'})
+    Demographics['Middle Name'] = Demographics['Middle Name'].str[0]
+   
+dateandtime = datetime.strptime(file[5:len(file) - 5].split(" ")[3], '%m%d%y')
+    
+date = datetime.date(dateandtime)
+    
+filename = " ".join(file[5:len(file) - 5].split(" ")[0:3])
+   
+Demographics['Group Name'] = filename
+    
+Demographics["Date"] = date
+    
+Demographics.to_sql(con=connect_db(), index=False, name='Demographics', if_exists='append')
+
+def
+quartersf(quarters, file):
+  
+ quarters = quarters.loc[df['Risk Increased Flag'] == "Yes"].copy()
+    
+quarters = quarters.iloc[0:df.shape[0] - 3, [1, 8, 9, 10, 11]]
+    
+final = pd.DataFrame(columns=["ID", "Quarter", "Attributed Flag", "Risk Score"])
+    for index, row in quarters.iterrows():
+        
+final = final.append(
+            pd.Series([row[0], "Q1", row[1], row[3]], index=["ID", "Quarter", "Attributed Flag", "Risk Score"]),
+            ignore_index=True)
+        final = final.append(
+            pd.Series([row[0], "Q2", row[2], row[4]], index=["ID", "Quarter", "Attributed Flag", "Risk Score"]),
+            ignore_index=True)
+    dateandtime = datetime.strptime(file[5:len(file) - 5].split(" ")[3], '%m%d%y')
+    date = datetime.date(dateandtime)
+    final["Date"] = date
+    final.to_sql(con=connect_db(), index=False, name='QuartersandRisk', if_exists='append')
+
+for file_name in glob.glob("data/*.xlsx"):
+    df = pd.read_excel(file_name, skiprows=[0, 1, 2])
+    demographics(df.iloc[0:df.shape[0] - 3, 1:8].copy(), file_name)
+   
+quartersf(df.copy(), file_name)
